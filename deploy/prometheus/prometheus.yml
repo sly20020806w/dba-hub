@@ -1,0 +1,8 @@
+global:
+  scrape_interval: 15s
+scrape_configs:
+  - job_name: mysqld
+    static_configs:
+      - targets: ["exporter:9104"]
+        labels:
+          service: order-mysql

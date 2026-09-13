@@ -1,0 +1,9 @@
+httpListen: ":8091"
+token: ""
+db:
+  driver: sqlite
+  dsn: "/app/data/hub.db"
+inspect:
+  intervalS: 300          # 容器演示：每 5 分钟自动巡检一次
+notify:
+  feishuWebhook: ""

@@ -1,0 +1,68 @@
+version: "3.8"
+
+# 一键拉起：dba-hub(8091) + MySQL8(3306) + mysqld-exporter(9104) + Prometheus(9090) + Grafana(3000)
+# docker compose up -d --build
+# 平台里新增实例：host=mysql port=3306 user=root pass=example mode=mysql，即可对真实 MySQL 巡检
+
+services:
+  hub:
+    build: .
+    image: dba-hub:latest
+    container_name: dbahub
+    ports: ["8091:8091"]
+    volumes:
+      - hub-data:/app/data
+      - ./configs/config.docker.yaml:/app/configs/config.yaml:ro
+    depends_on: [mysql]
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8.0
+    container_name: dbahub-mysql
+    command:
+      - --performance-schema=ON
+      - --slow-query-log=ON
+      - --long-query-time=1
+      - --character-set-server=utf8mb4
+    environment:
+      MYSQL_ROOT_PASSWORD: example
+      MYSQL_DATABASE: order_db
+    ports: ["3306:3306"]
+    volumes:
+      - ./deploy/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - mysql-data:/var/lib/mysql
+    restart: unless-stopped
+
+  exporter:
+    image: prom/mysqld-exporter:v0.15.1
+    container_name: dbahub-exporter
+    command: ["--mysqld.username=exporter:exporter123", "--collect.info_schema.processlist", "--collect.info_schema.innodb_metrics"]
+    ports: ["9104:9104"]
+    depends_on: [mysql]
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: dbahub-prom
+    volumes:
+      - ./deploy/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports: ["9090:9090"]
+    depends_on: [exporter]
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: dbahub-grafana
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+    volumes:
+      - ./deploy/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./deploy/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports: ["3000:3000"]
+    restart: unless-stopped
+
+volumes:
+  hub-data:
+  mysql-data:

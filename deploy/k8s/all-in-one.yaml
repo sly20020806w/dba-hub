@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dba-ops
+  labels: { app: dba-hub }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dba-hub-config
+  namespace: dba-ops
+data:
+  config.yaml: |
+    httpListen: ":8091"
+    token: ""
+    db:
+      driver: sqlite
+      dsn: "/data/hub.db"
+    inspect:
+      intervalS: 300
+    notify: { feishuWebhook: "" }
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dba-hub-data
+  namespace: dba-ops
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dba-hub
+  namespace: dba-ops
+  labels: { app: dba-hub }
+spec:
+  replicas: 1
+  strategy: { type: Recreate }
+  selector:
+    matchLabels: { app: dba-hub }
+  template:
+    metadata:
+      labels: { app: dba-hub }
+    spec:
+      containers:
+        - name: hub
+          image: dba-hub:latest
+          args: ["-config", "/app/configs/config.yaml"]
+          ports: [{ containerPort: 8091 }]
+          volumeMounts:
+            - { name: config, mountPath: /app/configs/config.yaml, subPath: config.yaml }
+            - { name: data, mountPath: /data }
+          readinessProbe:
+            httpGet: { path: /api/v1/health, port: 8091 }
+          livenessProbe:
+            httpGet: { path: /api/v1/health, port: 8091 }
+            initialDelaySeconds: 10
+          resources:
+            requests: { cpu: "50m", memory: "64Mi" }
+            limits: { cpu: "500m", memory: "256Mi" }
+      volumes:
+        - name: config
+          configMap: { name: dba-hub-config }
+        - name: data
+          persistentVolumeClaim: { claimName: dba-hub-data }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dba-hub
+  namespace: dba-ops
+spec:
+  selector: { app: dba-hub }
+  ports: [{ port: 8091, targetPort: 8091 }]

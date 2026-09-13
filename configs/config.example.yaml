@@ -1,0 +1,9 @@
+httpListen: ":8091"
+token: ""                 # 生产建议设置，受保护接口需 Authorization: Bearer <token>
+db:
+  driver: sqlite          # 平台自身元数据库，也可换成 mysql
+  dsn: "data/hub.db"
+inspect:
+  intervalS: 0            # 自动巡检周期(秒)，0=关闭只手动巡检；生产可设 300
+notify:
+  feishuWebhook: ""       # 巡检报告推送(可选)

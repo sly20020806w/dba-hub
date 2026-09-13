@@ -1,0 +1,29 @@
+{
+  "title": "MySQL 实例监控(mysqld-exporter)",
+  "tags": ["dba-hub", "mysql"],
+  "schemaVersion": 39,
+  "version": 1,
+  "time": {"from": "now-3h", "to": "now"},
+  "panels": [
+    {"id": 1, "type": "stat", "title": "QPS", "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+     "targets": [{"expr": "rate(mysql_global_status_questions[1m])", "refId": "A"}],
+     "options": {"reduceOptions": {"calcs": ["lastNotNull"]}}},
+    {"id": 2, "type": "stat", "title": "连接数使用率%", "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+     "targets": [{"expr": "mysql_global_status_threads_connected / mysql_global_variables_max_connections * 100", "refId": "A"}],
+     "options": {"reduceOptions": {"calcs": ["lastNotNull"]}}},
+    {"id": 3, "type": "stat", "title": "慢查询累计", "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+     "targets": [{"expr": "mysql_global_status_slow_queries", "refId": "A"}],
+     "options": {"reduceOptions": {"calcs": ["lastNotNull"]}}},
+    {"id": 4, "type": "stat", "title": "运行中线程", "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+     "targets": [{"expr": "mysql_global_status_threads_running", "refId": "A"}],
+     "options": {"reduceOptions": {"calcs": ["lastNotNull"]}}},
+    {"id": 5, "type": "timeseries", "title": "QPS / TPS", "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+     "targets": [{"expr": "rate(mysql_global_status_questions[1m])", "legend": "qps", "refId": "A"},
+                 {"expr": "rate(mysql_global_status_com_commit[1m]) + rate(mysql_global_status_com_rollback[1m])", "legend": "tps", "refId": "B"}]},
+    {"id": 6, "type": "timeseries", "title": "连接数 / 最大连接", "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+     "targets": [{"expr": "mysql_global_status_threads_connected", "legend": "connected", "refId": "A"},
+                 {"expr": "mysql_global_variables_max_connections", "legend": "max", "refId": "B"}]},
+    {"id": 7, "type": "timeseries", "title": "InnoDB 缓冲池命中率 %", "gridPos": {"h": 8, "w": 24, "x": 0, "y": 12},
+     "targets": [{"expr": "(1 - rate(mysql_global_status_innodb_buffer_pool_reads[5m]) / rate(mysql_global_status_innodb_buffer_pool_read_requests[5m])) * 100", "refId": "A"}]}
+  ]
+}

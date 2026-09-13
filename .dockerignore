@@ -1,0 +1,8 @@
+.git
+*.exe
+hub
+hub-linux-*
+data
+*.db
+docs
+README.md
